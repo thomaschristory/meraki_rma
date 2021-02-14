@@ -18,7 +18,7 @@ class MerakiRma:
         self.network_name = network_name
         self.organization = self.Organization(self.dashboard, self.organization_id)
         self.network = self.Network(self.dashboard, self.organization_id, self.network_name)
-        self.switch = self.Switch(self.dashboard, self.network.network_id, source_serial, target_serial)
+        self.switch = self.Switch(self.dashboard, self.organization_id, self.network.network_id, source_serial, target_serial)
 
     class Organization:
         """ Subclass to handle organization related operations"""
@@ -81,8 +81,9 @@ class MerakiRma:
     class Switch:
         """ Subclass to handle switch related operations"""
 
-        def __init__(self, dashboard, network_id, source_serial, target_serial):
+        def __init__(self, dashboard, organization_id, network_id, source_serial, target_serial):
             self.dashboard = dashboard
+            self.organization_id = organization_id
             self.network_id = network_id
             self.source_serial = source_serial
             self.target_serial = target_serial
@@ -109,6 +110,13 @@ class MerakiRma:
                                                            switchStackId=stack_id,
                                                            serial=self.source_serial)
             console.print(f"Removing switch {self.source_serial} from the stack {stack_id}", style="good")
+
+        @meraki_exception
+        def clone_switch(self):
+            self.dashboard.switch.cloneOrganizationSwitchDevices(organizationId=self.organization_id,
+                                                                 sourceSerial=self.source_serial,
+                                                                 targetSerials=[self.target_serial])
+            console.print(f"New switch {self.target_serial} cloned with config from broken switch {self.source_serial}")
 
         @meraki_exception
         def update_aggregates(self):
