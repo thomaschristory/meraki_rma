@@ -7,6 +7,10 @@ authors = ["Thomas Christory"]
 [tool.poetry.dependencies]
 python = "^3.8"
 meraki = "^1.4.3"
+meraki-env = "^0.1.1"
+meraki-dashboard-connect = "^0.1.1"
+rich = "^9.10.0"
+meraki-exception = "^0.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
