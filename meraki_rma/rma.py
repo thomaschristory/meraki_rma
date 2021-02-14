@@ -18,7 +18,8 @@ class MerakiRma:
         self.network_name = network_name
         self.organization = self.Organization(self.dashboard, self.organization_id)
         self.network = self.Network(self.dashboard, self.organization_id, self.network_name)
-        self.switch = self.Switch(self.dashboard, self.organization_id, self.network.network_id, source_serial, target_serial)
+        self.switch = self.Switch(self.dashboard, self.organization_id, self.network.network_id,
+                                  source_serial, target_serial)
 
     class Organization:
         """ Subclass to handle organization related operations"""
