@@ -1,12 +1,18 @@
 import sys
+from itertools import groupby
 from meraki_dashboard_connect import dashboard_connection
 from meraki_exception import meraki_exception
 from rich.console import Console
 from rich.theme import Theme
 
 # Rich configuration
-custom_theme = Theme({"good": "green", "bad": "bold red"})
+custom_theme = Theme({"good": "green", "bad": "bold red", "info": "magenta"})
 console = Console(theme=custom_theme)
+
+
+def all_equal(iterable):
+    g = groupby(iterable)
+    return next(g, True) and not next(g, False)
 
 
 class MerakiRma:
@@ -47,6 +53,11 @@ class MerakiRma:
             self.dashboard.organizations.unclaimIntoOrganization(organizationId=self.organization_id,
                                                                  serials=[serial])
             console.print(f"Serial {serial} removed from the organization.", style="good")
+
+        @meraki_exception
+        def get_inventory_device(self, serial):
+            return self.dashboard.organizations.getOrganizationInventoryDevice(organizationId=self.organization_id,
+                                                                        serial=serial)
 
     class Network:
         """ Subclass to handle network related operations"""
@@ -100,37 +111,50 @@ class MerakiRma:
 
         @meraki_exception
         def add_serial_to_stack(self, stack_id):
-            self.dashboard.switch.addNetworkSwitchStack(networkId=self.network_id,
-                                                        switchStackId=stack_id,
-                                                        serial=self.target_serial)
-            console.print(f"Adding switch {self.target_serial} to the stack {stack_id}.", style="good")
+            if stack_id != "no-stack":
+                self.dashboard.switch.addNetworkSwitchStack(networkId=self.network_id,
+                                                            switchStackId=stack_id,
+                                                            serial=self.target_serial)
+                console.print(f"Adding switch {self.target_serial} to the stack {stack_id}.", style="good")
 
         @meraki_exception
         def remove_serial_from_stack(self, stack_id):
-            self.dashboard.switch.removeNetworkSwitchStack(networkId=self.network_id,
-                                                           switchStackId=stack_id,
-                                                           serial=self.source_serial)
-            console.print(f"Removing switch {self.source_serial} from the stack {stack_id}", style="good")
+            if stack_id != "no-stack":
+                self.dashboard.switch.removeNetworkSwitchStack(networkId=self.network_id,
+                                                               switchStackId=stack_id,
+                                                               serial=self.source_serial)
+                console.print(f"Removing switch {self.source_serial} from the stack {stack_id}", style="good")
 
         @meraki_exception
         def clone_switch(self):
             self.dashboard.switch.cloneOrganizationSwitchDevices(organizationId=self.organization_id,
                                                                  sourceSerial=self.source_serial,
                                                                  targetSerials=[self.target_serial])
-            console.print(f"New switch {self.target_serial} cloned with config from broken switch {self.source_serial}")
+            console.print(f"New switch {self.target_serial} cloned with config from broken switch {self.source_serial}",
+                          style="good")
 
         @meraki_exception
         def update_aggregates(self):
             link_aggregations = self.dashboard.switch.getNetworkSwitchLinkAggregations(networkId=self.network_id)
             for aggregate in link_aggregations:
+                sp_list = []
                 for switchport in aggregate['switchPorts']:
-                    if switchport['serial'] == self.source_serial:
-                        switchport['serial'] = self.target_serial
-                        self.dashboard.switch.updateNetworkSwitchLinkAggregation(networkId=self.network_id,
-                                                                                 linkAggregationId=aggregate['id'],
-                                                                                 switchPorts=aggregate['switchPorts'])
-                        console.print(f"Replacing switch {self.source_serial} with switch {self.target_serial}",
-                                      style="good")
+                    sp_list.append(switchport['serial'])
+                if all_equal(sp_list):
+                    self.dashboard.switch.deleteNetworkSwitchLinkAggregation(networkId=self.network_id,
+                                                                             linkAggregationId=aggregate['id'])
+                    console.print(f"Removing aggregate {aggregate['id']} as it is useless now.",
+                                  style="info")
+                else:
+                    for switchport in aggregate['switchPorts']:
+                        if switchport['serial'] == self.source_serial:
+                            switchport['serial'] = self.target_serial
+                            self.dashboard.switch.updateNetworkSwitchLinkAggregation(networkId=self.network_id,
+                                                                                     linkAggregationId=aggregate['id'],
+                                                                                     switchPorts=aggregate['switchPorts'])
+                            console.print(f"Replacing switch {self.source_serial} with switch {self.target_serial} in "
+                                          f"aggregate {aggregate['id']}",
+                                          style="good")
 
         @meraki_exception
         def update_misc(self):
