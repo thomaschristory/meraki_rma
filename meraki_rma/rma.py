@@ -159,14 +159,26 @@ class MerakiRma:
         @meraki_exception
         def update_misc(self):
             broken_switch = self.dashboard.devices.getDevice(serial=self.source_serial)
-            self.dashboard.devices.updateDevice(serial=self.target_serial,
-                                                name=broken_switch['name'],
-                                                address=broken_switch['address'],
-                                                moveMapMarker=True,
-                                                tags=broken_switch['tags'])
-            console.print(f"Adding name, address and tags from switch {self.source_serial} "
-                          f"to switch {self.target_serial}",
-                          style="good")
-            self.dashboard.devices.updateDevice(serial=self.source_serial,
-                                                name=broken_switch['name'] + "_broken")
-            console.print(f"Renaming switch {self.source_serial} to {broken_switch['name']}_broken", style="good")
+            if broken_switch['name']:
+                self.dashboard.devices.updateDevice(serial=self.target_serial,
+                                                    name=broken_switch['name'],
+                                                    address=broken_switch['address'],
+                                                    moveMapMarker=True,
+                                                    tags=broken_switch['tags'])
+                console.print(f"Adding name, address and tags from switch {self.source_serial} "
+                              f"to switch {self.target_serial}",
+                              style="good")
+                self.dashboard.devices.updateDevice(serial=self.source_serial,
+                                                    name=broken_switch['name'] + "_broken")
+                console.print(f"Renaming switch {self.source_serial} to {broken_switch['name']}_broken", style="good")
+            else:
+                self.dashboard.devices.updateDevice(serial=self.target_serial,
+                                                    address=broken_switch['address'],
+                                                    moveMapMarker=True,
+                                                    tags=broken_switch['tags'])
+                console.print(f"Adding address and tags from switch {self.source_serial} "
+                              f"to switch {self.target_serial}, name was empty so keeping the mac address as name",
+                              style="good")
+                self.dashboard.devices.updateDevice(serial=self.source_serial,
+                                                    name=broken_switch['mac'] + "_broken")
+                console.print(f"Renaming switch {self.source_serial} to {broken_switch['mac']}_broken", style="good")
