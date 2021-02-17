@@ -11,6 +11,7 @@ meraki-env = "^0.1.1"
 meraki-dashboard-connect = "^0.1.1"
 rich = "^9.10.0"
 meraki-exception = "^0.1.0"
+typer = "^0.3.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
