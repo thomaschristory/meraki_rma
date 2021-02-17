@@ -178,7 +178,7 @@ class MerakiRma:
                                                     tags=broken_switch['tags'])
                 console.print(f"Adding address and tags from switch {self.source_serial} "
                               f"to switch {self.target_serial}, name was empty so keeping the mac address as name",
-                              style="good")
+                              style="info")
                 self.dashboard.devices.updateDevice(serial=self.source_serial,
                                                     name=broken_switch['mac'] + "_broken")
                 console.print(f"Renaming switch {self.source_serial} to {broken_switch['mac']}_broken", style="good")
