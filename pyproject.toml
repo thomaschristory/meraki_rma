@@ -1,8 +1,11 @@
 [tool.poetry]
 name = "meraki_rma"
-version = "0.1.8"
-description = ""
+version = "0.1.9"
+description = "Library to make Meraki RMAs easy and programmatic."
 authors = ["Thomas Christory"]
+readme = "README.md"
+homepage = "https://github.com/thomaschristory/meraki_rma"
+keywords = ["meraki", "dashboard", "cisco", "python"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
@@ -19,3 +22,6 @@ pytest = "^5.2"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/thomaschristory/meraki_rma/issues"
