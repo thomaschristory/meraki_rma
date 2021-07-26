@@ -18,7 +18,7 @@ def all_equal(iterable):
 class MerakiRma:
     """Class to manage device replacement on Meraki"""
 
-    def __init__(self, organization_id, network_name, source_serial, target_serial):
+    def __init__(self, organization_id, network_name, source_serial, target_serial, rf_profile=None):
         self.dashboard = dashboard_connection()
         self.organization_id = organization_id
         self.network_name = network_name
@@ -26,6 +26,8 @@ class MerakiRma:
         self.network = self.Network(self.dashboard, self.organization_id, self.network_name)
         self.switch = self.Switch(self.dashboard, self.organization_id, self.network.network_id,
                                   source_serial, target_serial)
+        self.ap = self.Ap(self.dashboard, self.organization_id, self.network.network_id,
+                          source_serial, target_serial, rf_profile)
 
     class Organization:
         """ Subclass to handle organization related operations"""
@@ -57,7 +59,7 @@ class MerakiRma:
         @meraki_exception
         def get_inventory_device(self, serial):
             return self.dashboard.organizations.getOrganizationInventoryDevice(organizationId=self.organization_id,
-                                                                        serial=serial)
+                                                                               serial=serial)
 
     class Network:
         """ Subclass to handle network related operations"""
@@ -137,9 +139,7 @@ class MerakiRma:
         def update_aggregates(self):
             link_aggregations = self.dashboard.switch.getNetworkSwitchLinkAggregations(networkId=self.network_id)
             for aggregate in link_aggregations:
-                sp_list = []
-                for switchport in aggregate['switchPorts']:
-                    sp_list.append(switchport['serial'])
+                sp_list = [switchport['serial'] for switchport in aggregate['switchPorts']]
                 if all_equal(sp_list):
                     self.dashboard.switch.deleteNetworkSwitchLinkAggregation(networkId=self.network_id,
                                                                              linkAggregationId=aggregate['id'])
@@ -151,7 +151,8 @@ class MerakiRma:
                             switchport['serial'] = self.target_serial
                             self.dashboard.switch.updateNetworkSwitchLinkAggregation(networkId=self.network_id,
                                                                                      linkAggregationId=aggregate['id'],
-                                                                                     switchPorts=aggregate['switchPorts'])
+                                                                                     switchPorts=aggregate[
+                                                                                         'switchPorts'])
                             console.print(f"Replacing switch {self.source_serial} with switch {self.target_serial} in "
                                           f"aggregate {aggregate['id']}",
                                           style="good")
@@ -182,3 +183,56 @@ class MerakiRma:
                 self.dashboard.devices.updateDevice(serial=self.source_serial,
                                                     name=broken_switch['mac'] + "_broken")
                 console.print(f"Renaming switch {self.source_serial} to {broken_switch['mac']}_broken", style="good")
+
+    class Ap:
+        """ Subclass to handle access point related operations"""
+
+        def __init__(self, dashboard, organization_id, network_id, source_serial, target_serial, rf_profile):
+            self.dashboard = dashboard
+            self.organization_id = organization_id
+            self.network_id = network_id
+            self.source_serial = source_serial
+            self.target_serial = target_serial
+            self.rf_profile = rf_profile
+
+        @meraki_exception
+        def add_rf_profile(self):
+            rf_profiles = self.dashboard.wireless.getNetworkWirelessRfProfiles(self.network_id)
+            rf_profile_id = None
+            for profile in rf_profiles:
+                if profile['name'] == self.rf_profile:
+                    rf_profile_id = profile['id']
+            try:
+                rf_profile_id
+            except NameError:
+                console.print("Wrong RfProfile name")
+            else:
+                self.dashboard.wireless.updateDeviceWirelessRadioSettings(serial=self.target_serial,
+                                                                          rfProfileId=rf_profile_id)
+
+        @meraki_exception
+        def update_misc(self):
+            broken_ap = self.dashboard.devices.getDevice(serial=self.source_serial)
+            if broken_ap['name']:
+                self.dashboard.devices.updateDevice(serial=self.target_serial,
+                                                    name=broken_ap['name'],
+                                                    address=broken_ap['address'],
+                                                    moveMapMarker=True,
+                                                    tags=broken_ap['tags'])
+                console.print(f"Adding name, address and tags from ap {self.source_serial} "
+                              f"to ap {self.target_serial}",
+                              style="good")
+                self.dashboard.devices.updateDevice(serial=self.source_serial,
+                                                    name=broken_ap['name'] + "_broken")
+                console.print(f"Renaming ap {self.source_serial} to {broken_ap['name']}_broken", style="good")
+            else:
+                self.dashboard.devices.updateDevice(serial=self.target_serial,
+                                                    address=broken_ap['address'],
+                                                    moveMapMarker=True,
+                                                    tags=broken_ap['tags'])
+                console.print(f"Adding address and tags from ap {self.source_serial} "
+                              f"to ap {self.target_serial}, name was empty so keeping the mac address as name",
+                              style="info")
+                self.dashboard.devices.updateDevice(serial=self.source_serial,
+                                                    name=broken_ap['mac'] + "_broken")
+                console.print(f"Renaming ap {self.source_serial} to {broken_ap['mac']}_broken", style="good")
