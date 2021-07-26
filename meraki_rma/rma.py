@@ -18,7 +18,7 @@ def all_equal(iterable):
 class MerakiRma:
     """Class to manage device replacement on Meraki"""
 
-    def __init__(self, organization_id, network_name, source_serial, target_serial, rf_profile=None):
+    def __init__(self, organization_id, network_name, source_serial, target_serial):
         self.dashboard = dashboard_connection()
         self.organization_id = organization_id
         self.network_name = network_name
@@ -27,7 +27,7 @@ class MerakiRma:
         self.switch = self.Switch(self.dashboard, self.organization_id, self.network.network_id,
                                   source_serial, target_serial)
         self.ap = self.Ap(self.dashboard, self.organization_id, self.network.network_id,
-                          source_serial, target_serial, rf_profile)
+                          source_serial, target_serial)
 
     class Organization:
         """ Subclass to handle organization related operations"""
@@ -187,32 +187,23 @@ class MerakiRma:
     class Ap:
         """ Subclass to handle access point related operations"""
 
-        def __init__(self, dashboard, organization_id, network_id, source_serial, target_serial, rf_profile):
+        def __init__(self, dashboard, organization_id, network_id, source_serial, target_serial):
             self.dashboard = dashboard
             self.organization_id = organization_id
             self.network_id = network_id
             self.source_serial = source_serial
             self.target_serial = target_serial
-            self.rf_profile = rf_profile
+            self.device = self.dashboard.devices.getDevice(serial=self.source_serial)
 
         @meraki_exception
         def add_rf_profile(self):
-            rf_profiles = self.dashboard.wireless.getNetworkWirelessRfProfiles(self.network_id)
-            rf_profile_id = None
-            for profile in rf_profiles:
-                if profile['name'] == self.rf_profile:
-                    rf_profile_id = profile['id']
-            try:
-                rf_profile_id
-            except NameError:
-                console.print("Wrong RfProfile name")
-            else:
-                self.dashboard.wireless.updateDeviceWirelessRadioSettings(serial=self.target_serial,
-                                                                          rfProfileId=rf_profile_id)
+            rf_profile_id = self.device['rfProfileId']
+            self.dashboard.wireless.updateDeviceWirelessRadioSettings(serial=self.target_serial,
+                                                                      rfProfileId=rf_profile_id)
 
         @meraki_exception
         def update_misc(self):
-            broken_ap = self.dashboard.devices.getDevice(serial=self.source_serial)
+            broken_ap = self.device
             if broken_ap['name']:
                 self.dashboard.devices.updateDevice(serial=self.target_serial,
                                                     name=broken_ap['name'],
