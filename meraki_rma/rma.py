@@ -194,10 +194,11 @@ class MerakiRma:
             self.source_serial = source_serial
             self.target_serial = target_serial
             self.device = self.dashboard.devices.getDevice(serial=self.source_serial)
+            self.device_radio_settings = self.dashboard.devices.getDeviceRadioSettings(serial=self.source_serial)
 
         @meraki_exception
         def add_rf_profile(self):
-            rf_profile_id = self.device['rfProfileId']
+            rf_profile_id = self.device_radio_settings['rfProfileId']
             self.dashboard.wireless.updateDeviceWirelessRadioSettings(serial=self.target_serial,
                                                                       rfProfileId=rf_profile_id)
 
