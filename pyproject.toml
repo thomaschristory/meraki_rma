@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "meraki_rma"
-version = "0.1.11"
+version = "0.1.15"
 description = "Library to make Meraki RMAs easy and programmatic."
 authors = ["Thomas Christory"]
 readme = "README.md"
@@ -12,8 +12,8 @@ python = "^3.8"
 meraki = "^1.4.3"
 meraki-env = "^0.1.1"
 meraki-dashboard-connect = "^0.1.1"
-rich = "^9.10.0"
-meraki-exception = "^0.1.0"
+rich = "^10.10.0"
+meraki-exception = "^0.1.1"
 typer = "^0.3.2"
 
 [tool.poetry.dev-dependencies]
