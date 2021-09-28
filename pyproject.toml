@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "meraki_rma"
-version = "0.1.15"
+version = "0.1.16"
 description = "Library to make Meraki RMAs easy and programmatic."
 authors = ["Thomas Christory"]
 readme = "README.md"
